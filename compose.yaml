@@ -1,0 +1,42 @@
+version: "3.1"
+
+services:
+    api-gateway:
+        build: 
+            context: ./api-gateway
+        environment:
+          - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+          - FORMAT=OTEL
+          - BACKEND_ENDPOINT=http://backend:3000/hello
+        ports: 
+            - 8080:8080
+        depends_on:
+        - "otel-collector"
+    backend:
+        build: 
+            context: ./backend
+        environment:
+          - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+          - FORMAT=OTEL
+        ports: 
+            - 3000:3000
+        depends_on:
+        - "otel-collector"
+    otel-collector:
+        image: public.ecr.aws/aws-observability/aws-otel-collector:v0.34.0
+        command: [ "--config=/etc/otel-agent-config.yaml" ]
+        volumes:
+            - type: bind
+              source: ./adot-config.yaml
+              target: /etc/otel-agent-config.yaml
+        ports:
+            - 4317:4317
+        depends_on:
+        - "jaeger"
+    jaeger:
+        image: jaegertracing/all-in-one:1.49
+        command:
+            -  "--collector.otlp.grpc.host-port=5000"
+        ports:
+            - 5000:5000
+        

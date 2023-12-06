@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+    endpoint: jaeger:5000
+    tls:
+      insecure: true
+  awsxray:
+    region: us-east-1
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      exporters:
+        - awsxray
+        - otlp

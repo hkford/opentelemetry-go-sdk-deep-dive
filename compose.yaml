@@ -6,7 +6,6 @@ services:
             context: ./api-gateway
         environment:
           - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-          - FORMAT=OTEL
           - BACKEND_ENDPOINT=http://backend:3000/hello
         ports: 
             - 8080:8080
@@ -17,7 +16,6 @@ services:
             context: ./backend
         environment:
           - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-          - FORMAT=OTEL
         ports: 
             - 3000:3000
         depends_on:

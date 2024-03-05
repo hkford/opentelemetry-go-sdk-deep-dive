@@ -6,7 +6,7 @@ Enjoy distributed tracing step by step.
 ```
 $ docker compose up --build
 $ cd client
-$ FORMAT=OTEL go run main.go
+$ go run main.go
 ```
 
 ### Unit test

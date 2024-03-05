@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,8 +14,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 
-	"go.opentelemetry.io/contrib/propagators/aws/xray"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -33,11 +30,10 @@ func fatalLog(err error, message string) {
 }
 
 func registerTracerProvider() (*sdktrace.TracerProvider, error) {
-	format := os.Getenv("FORMAT")
 
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String("gateway-service"),
+		semconv.ServiceNameKey.String("client"),
 	)
 
 	ctx := context.Background()
@@ -51,35 +47,6 @@ func registerTracerProvider() (*sdktrace.TracerProvider, error) {
 		fatalLog(err, "failed to create new OTLP trace exporter")
 		return nil, err
 	}
-
-	if format == "XRAY" {
-		tp := newTracerProviderWithXRayExporter(res, spanExporter)
-		otel.SetTextMapPropagator(xray.Propagator{})
-		return tp, err
-	} else if format == "OTEL" {
-		tp := newTracerProviderWithOtlpExporter(res, spanExporter)
-		otel.SetTextMapPropagator(propagation.TraceContext{})
-		return tp, err
-	} else {
-		return nil, errors.New("environment variable FORMAT (XRAY or OTEL)not set")
-	}
-}
-
-func newTracerProviderWithXRayExporter(res *resource.Resource, spanExporter *otlptrace.Exporter) *sdktrace.TracerProvider {
-	idg := xray.NewIDGenerator()
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithResource(res),
-		sdktrace.WithBatcher(spanExporter),
-		sdktrace.WithIDGenerator(idg),
-	)
-
-	otel.SetTracerProvider(tp)
-	return tp
-}
-
-func newTracerProviderWithOtlpExporter(res *resource.Resource, spanExporter *otlptrace.Exporter) *sdktrace.TracerProvider {
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
@@ -87,8 +54,8 @@ func newTracerProviderWithOtlpExporter(res *resource.Resource, spanExporter *otl
 	)
 
 	otel.SetTracerProvider(tp)
-
-	return tp
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	return tp, err
 }
 
 func retrieveResponse() ([]byte, error) {
